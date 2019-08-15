@@ -103,6 +103,7 @@ pub const Emulator = struct {
     D: u4,
     IAR: [3]u4,
     ADDR: [3]u4,
+    carry: bool,
 
     pub fn init(mmu: MMU) Emulator {
         return Emulator{
@@ -113,6 +114,7 @@ pub const Emulator = struct {
             .D = undefined,
             .IAR = [3]u4{ 0, 0, 0 },
             .ADDR = [3]u4{ 0, 0, 0 },
+            .carry = false,
         };
     }
 
@@ -174,6 +176,9 @@ pub const Emulator = struct {
                     const reg_B = regs[BB];
                     reg_B.* = reg_A.*;
                 },
+                7 => { // CLC
+                    self.carry = false;
+                },
                 8 => { // JMP
                     const A2 = self.fetch();
                     const A1 = self.fetch();
@@ -196,6 +201,27 @@ pub const Emulator = struct {
                         self.IAR[1] = A1;
                         self.IAR[2] = A2;
                     }
+                },
+                0xB => { // JC
+                    const A2 = self.fetch();
+                    const A1 = self.fetch();
+                    const A0 = self.fetch();
+                    if (self.carry) {
+                        self.IAR[0] = A0;
+                        self.IAR[1] = A1;
+                        self.IAR[2] = A2;
+                    }
+                },
+                0xC => { // ADD
+                    const regs = [4]*u4{ &self.A, &self.B, &self.C, &self.D };
+                    const AABB = self.fetch();
+                    const AA = (AABB & 0xC) >> 2;
+                    const BB = AABB & 0x3;
+                    const reg_A = regs[AA];
+                    const reg_B = regs[BB];
+                    const result = @intCast(u5, reg_A.*) + reg_B.*;
+                    self.carry = if (result & 1 << 4 > 0) true else false;
+                    reg_A.* = @intCast(u4, result & 0xF);
                 },
                 0xD => { // NAND
                     const regs = [4]*u4{ &self.A, &self.B, &self.C, &self.D };
