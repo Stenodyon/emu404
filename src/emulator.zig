@@ -204,7 +204,7 @@ pub const Emulator = struct {
                     const BB = AABB & 0x3;
                     const reg_A = regs[AA];
                     const reg_B = regs[BB];
-                    reg_B.* = ~(reg_B.* & reg_A.*);
+                    reg_A.* = ~(reg_B.* & reg_A.*);
                 },
                 else => {
                     std.debug.panic(
